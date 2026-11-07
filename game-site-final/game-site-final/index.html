@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>迷你游戏大厅 V1.0</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 版本号 -->
+<div class="version-badge">V 1.0</div>
+
+<!-- 大厅 -->
+<div id="lobby">
+    <div class="header">
+        <h1>🎮 迷你游戏大厅</h1>
+        <p>9款经典小游戏 + 联机炮台对战 · 键盘或触屏均可操作</p>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="footer">键盘 WASD / 方向键控制 · 手机可使用屏幕按钮</div>
+</div>
+
+<!-- 游戏页 -->
+<div id="gamepage">
+    <div class="topbar">
+        <button class="back" onclick="backToLobby()">← 返回</button>
+        <span class="title" id="gtitle"></span>
+        <span class="score" id="gscore"></span>
+    </div>
+    <canvas id="cv"></canvas>
+    <div class="btns" id="btns"></div>
+    <div class="dpad" id="dpad"></div>
+</div>
+
+<!-- 联机炮台游戏页 -->
+<div id="turretpage">
+    <div id="turretLobby">
+        <h1>🏰 联机炮台射击</h1>
+        <div class="lobby-box">
+            <input type="text" id="playerName" placeholder="输入你的名字" maxlength="12" value="玩家">
+            <div class="btn-group">
+                <button onclick="turretCreate()">🎮 创建房间</button>
+                <div class="join-row">
+                    <input type="text" id="roomCode" placeholder="房间号" maxlength="6" style="text-transform:uppercase">
+                    <button onclick="turretJoin()">加入</button>
+                </div>
+            </div>
+            <div id="tstatus"></div>
+        </div>
+        <div class="instructions">
+            <h3>📖 玩法说明</h3>
+            <p><b>WASD</b> 或 <b>方向键</b> 移动炮台</p>
+            <p><b>J</b> 或 <b>空格</b> 发射炮弹（自动瞄准最近敌人）</p>
+            <p>击毁敌方炮台得分，先到 20 杀获胜！</p>
+            <p>支持 2-4 人同房间对战</p>
+            <p style="color:#ff6b6b;margin-top:8px;">⚠️ 联机模式需先启动服务器（npm start）</p>
+        </div>
+        <button class="exit-btn" onclick="backToLobby()">← 返回大厅</button>
+    </div>
+
+    <div id="turretWaiting" style="display:none;">
+        <h2>⏳ 等待玩家加入...</h2>
+        <p>房间号: <b id="displayRoomId"></b></p>
+        <p id="tplayerList"></p>
+        <button onclick="turretLeave()">退出房间</button>
+    </div>
+
+    <div id="turretGameArea" style="display:none;">
+        <div id="turretHUD">
+            <div id="killFeed"></div>
+            <div id="scoreBoard"></div>
+            <div id="crosshair"></div>
+        </div>
+        <canvas id="turretCanvas" width="800" height="600"></canvas>
+        <button id="turretLeaveBtn" onclick="turretLeave()">退出</button>
+    </div>
+
+    <div id="turretGameOver" style="display:none;">
+        <h1 id="winnerText"></h1>
+        <button onclick="turretBackLobby()">返回大厅</button>
+    </div>
+</div>
+
+<script src="games.js"></script>
+<script src="app.js"></script>
+<script src="turret.js"></script>
+</body>
+</html>
