@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏大厅 V 1.0</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="version-tag">V 1.0</div>
+
+  <!-- ========== 大厅 ========== -->
+  <div id="lobby">
+    <h1>🎮 游戏大厅</h1>
+    <p class="subtitle">单机游戏 + 联机对战</p>
+    <div class="games-grid">
+      <div class="game-card" onclick="openGame('tetris')">
+        <div class="game-icon">🧩</div>
+        <div class="game-name">俄罗斯方块</div>
+      </div>
+      <div class="game-card" onclick="openGame('snake')">
+        <div class="game-icon">🐍</div>
+        <div class="game-name">贪吃蛇</div>
+      </div>
+      <div class="game-card" onclick="openGame('2048')">
+        <div class="game-icon">🔢</div>
+        <div class="game-name">2048</div>
+      </div>
+      <div class="game-card" onclick="openGame('brick')">
+        <div class="game-icon">🧱</div>
+        <div class="game-name">打砖块</div>
+      </div>
+      <div class="game-card" onclick="openGame('racing')">
+        <div class="game-icon">🏎️</div>
+        <div class="game-name">极速赛车</div>
+      </div>
+      <div class="game-card" onclick="openGame('memory')">
+        <div class="game-icon">🃏</div>
+        <div class="game-name">翻翻乐</div>
+      </div>
+      <div class="game-card" onclick="openGame('tictactoe')">
+        <div class="game-icon">⭕</div>
+        <div class="game-name">井字棋</div>
+      </div>
+      <div class="game-card" onclick="openGame('shooter')">
+        <div class="game-icon">🚀</div>
+        <div class="game-name">太空射击</div>
+      </div>
+      <div class="game-card" onclick="openGame('target')">
+        <div class="game-icon">🎯</div>
+        <div class="game-name">打靶游戏</div>
+      </div>
+      <div class="game-card turret-card" onclick="openTurret()">
+        <div class="game-icon">🏰</div>
+        <div class="game-name">联机炮台</div>
+        <span class="online-badge">联机</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 联机炮台大厅 ========== -->
+  <div id="turret-lobby" style="display:none;">
+    <h2>🏰 联机炮台射击</h2>
+    <div class="turret-panel">
+      <input type="text" id="playerName" placeholder="输入你的昵称" value="玩家">
+      <br><br>
+      <button class="btn-create" onclick="createRoom()">🎮 创建房间</button>
+      <div class="divider">— 或 —</div>
+      <input type="text" id="roomInput" placeholder="输入房间号" maxlength="10" style="text-transform: uppercase;">
+      <br><br>
+      <button class="btn-join" onclick="joinRoom()">🚪 加入房间</button>
+      <div id="roomMsg"></div>
+    </div>
+    <div class="turret-info">
+      <p>🎮 WASD / 方向键 移动炮台</p>
+      <p>💥 J / 空格 发射炮弹</p>
+      <p>🏆 先到 20 杀获胜 | 支持 2-4 人对战</p>
+    </div>
+    <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+  </div>
+
+  <!-- ========== 联机炮台游戏 ========== -->
+  <div id="turret-game" style="display:none;">
+    <div id="turretHud">
+      <span id="turretScore">击杀: 0</span>
+      <span id="turretHealth">HP: 100</span>
+    </div>
+    <div id="scoreboard"></div>
+    <canvas id="turretCanvas" width="800" height="500"></canvas>
+    <div class="touch-pad">
+      <div></div><button onclick="turretMove('up')">W</button><div></div>
+      <button onclick="turretMove('left')">A</button>
+      <button onclick="turretShootBtn()">J</button>
+      <button onclick="turretMove('right')">D</button>
+      <div></div><button onclick="turretMove('down')">S</button><div></div>
+    </div>
+    <button class="back-btn" onclick="backToTurretLobby()">← 退出对战</button>
+  </div>
+
+  <!-- ========== 单机游戏区 ========== -->
+  <div id="gameArea" style="display:none;">
+    <div id="gameInfo"></div>
+    <canvas id="gameCanvas"></canvas>
+    <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+  <script src="games.js"></script>
+  <script src="turret.js"></script>
+</body>
+</html>

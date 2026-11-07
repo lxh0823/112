@@ -1,0 +1,162 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0d0d2b 100%);
+  color: #fff;
+  font-family: 'Arial', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.version-tag {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  background: rgba(100, 100, 255, 0.3);
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 999;
+}
+
+/* ========== 大厅 ========== */
+#lobby { padding: 40px 20px; text-align: center; }
+#lobby h1 {
+  font-size: 32px;
+  margin-bottom: 5px;
+  background: linear-gradient(90deg, #66a6ff, #89f7fe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle { color: #8899aa; margin-bottom: 25px; font-size: 14px; }
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.game-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 25px 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+.game-card:hover {
+  background: rgba(255,255,255,0.14);
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(100,150,255,0.3);
+}
+.game-icon { font-size: 40px; margin-bottom: 8px; }
+.game-name { font-size: 14px; color: #ccc; }
+.online-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: #ff4757; color: #fff;
+  font-size: 10px; padding: 2px 6px;
+  border-radius: 8px;
+}
+.turret-card { border-color: rgba(255, 71, 87, 0.5); }
+
+/* ========== 联机面板 ========== */
+.turret-panel {
+  text-align: center;
+  margin: 20px auto;
+  max-width: 400px;
+}
+.turret-panel input {
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  background: #1a1a3a;
+  color: #fff;
+  width: 220px;
+  text-align: center;
+}
+.btn-create {
+  padding: 12px 30px;
+  font-size: 16px;
+  background: linear-gradient(135deg, #ff6b6b, #ffa500);
+  color: #fff; border: none;
+  border-radius: 8px; cursor: pointer;
+}
+.btn-join {
+  padding: 12px 30px;
+  font-size: 16px;
+  background: linear-gradient(135deg, #4a9eff, #6c5ce7);
+  color: #fff; border: none;
+  border-radius: 8px; cursor: pointer;
+}
+.divider { margin: 15px 0; color: #666; font-size: 13px; }
+#roomMsg { margin-top: 12px; font-size: 14px; }
+.turret-info { margin: 20px 0; color: #8899aa; font-size: 14px; line-height: 2; }
+
+/* ========== 画布 ========== */
+canvas {
+  display: block;
+  margin: 10px auto;
+  border-radius: 8px;
+  border: 2px solid rgba(100,150,255,0.3);
+}
+
+/* ========== 通用 ========== */
+.back-btn {
+  position: fixed;
+  bottom: 20px; left: 20px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 100;
+}
+.back-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ========== 炮台HUD ========== */
+#turretHud {
+  position: fixed;
+  top: 50px; left: 20px;
+  font-size: 16px; z-index: 100;
+}
+#turretHud span { display: block; margin-bottom: 5px; }
+
+#scoreboard {
+  position: fixed;
+  top: 50px; right: 20px;
+  background: rgba(0,0,0,0.5);
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 100;
+  min-width: 150px;
+}
+#scoreboard div { margin: 3px 0; }
+
+.touch-pad {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 45px);
+  grid-template-rows: repeat(3, 45px);
+  gap: 4px;
+}
+.touch-pad button {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; border-radius: 6px;
+  cursor: pointer; font-size: 14px;
+}
+.touch-pad button:active { background: rgba(255,255,255,0.4); }
+
+#gameInfo { text-align: center; padding: 20px; font-size: 16px; color: #aaa; }
+
+@media (max-width: 600px) {
+  .games-grid { grid-template-columns: repeat(2, 1fr); }
+  #turretCanvas { width: 100vw; height: 60vh; }
+}
