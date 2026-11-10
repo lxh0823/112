@@ -1,0 +1,141 @@
+/* ========== 全局 ========== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.version-tag {
+  position: fixed; top: 15px; right: 20px;
+  background: rgba(74, 158, 255, 0.3);
+  padding: 5px 15px; border-radius: 20px;
+  font-size: 14px; z-index: 999;
+}
+
+.page-hidden { display: none !important; }
+
+/* ========== 大厅 ========== */
+#lobby { padding: 40px 20px; text-align: center; }
+#lobby h1 {
+  font-size: 32px; margin-bottom: 30px;
+  background: linear-gradient(90deg, #66a6ff, #89f7fe);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px; max-width: 900px; margin: 0 auto;
+}
+.game-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; padding: 20px 10px;
+  cursor: pointer; transition: all 0.3s; position: relative;
+}
+.game-card:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(74,158,255,0.3);
+}
+.game-icon { font-size: 36px; margin-bottom: 8px; }
+.game-name { font-size: 14px; color: #ccc; }
+.badge-online {
+  position: absolute; top: 8px; right: 8px;
+  background: #ff4757; color: #fff;
+  font-size: 10px; padding: 2px 6px; border-radius: 8px;
+}
+.forum-card { border-color: rgba(46, 213, 115, 0.5); }
+
+/* ========== 论坛 ========== */
+.forum-container {
+  max-width: 800px; margin: 30px auto; padding: 20px;
+}
+.forum-container h2 { text-align: center; margin-bottom: 20px; color: #2ed573; }
+.forum-input-area {
+  display: flex; gap: 10px; margin-bottom: 20px;
+}
+.forum-input-area input {
+  padding: 12px; font-size: 15px; border-radius: 8px;
+  border: 1px solid #444; background: #1a1a2e; color: #fff;
+}
+#forumName { flex: 0 0 140px; }
+#forumMsg { flex: 1; }
+.forum-input-area button {
+  padding: 12px 25px; background: #2ed573; color: #fff;
+  border: none; border-radius: 8px; cursor: pointer; font-size: 15px;
+  white-space: nowrap;
+}
+.forum-input-area button:hover { background: #26af5f; }
+.forum-empty { text-align: center; color: #666; padding: 40px 0; }
+.forum-item {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px; padding: 15px; margin-bottom: 12px;
+  border-left: 3px solid #2ed573;
+}
+.forum-item-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.forum-item-name { color: #4a9eff; font-size: 14px; font-weight: bold; }
+.forum-item-time { color: #555; font-size: 12px; }
+.forum-item-msg { color: #e0e0e0; font-size: 15px; line-height: 1.5; word-break: break-all; }
+
+/* ========== 联机炮台 ========== */
+.turret-panel { text-align: center; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; }
+.turret-panel input {
+  padding: 12px; font-size: 16px; border-radius: 8px;
+  border: 1px solid #444; background: #1a1a2e; color: #fff;
+  width: 100%; margin-bottom: 12px; text-align: center;
+}
+.turret-btns { margin-bottom: 15px; }
+.btn-orange {
+  padding: 12px 30px; font-size: 16px; background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: #fff; border: none; border-radius: 8px; cursor: pointer;
+}
+.btn-blue {
+  padding: 12px 25px; font-size: 16px; background: #3742fa;
+  color: #fff; border: none; border-radius: 8px; cursor: pointer;
+}
+.divider { color: #555; margin: 10px 0; }
+.join-row { display: flex; gap: 10px; }
+.join-row input { flex: 1; margin-bottom: 0; }
+#roomMsg { margin-top: 15px; min-height: 24px; font-size: 15px; }
+.howto { margin-top: 25px; text-align: left; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; }
+.howto p { color: #aaa; font-size: 13px; margin-bottom: 5px; }
+
+#turretHud {
+  position: fixed; top: 50px; left: 20px;
+  font-size: 16px; color: #fff; z-index: 100;
+}
+#turretHud span { display: block; margin-bottom: 5px; }
+.touch-pad {
+  position: fixed; bottom: 20px; right: 20px;
+  display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); gap: 4px;
+}
+.touch-pad button {
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; border-radius: 8px; cursor: pointer; font-size: 16px;
+}
+
+/* ========== 通用 ========== */
+canvas { display: block; margin: 10px auto; border-radius: 8px; }
+.back-btn {
+  position: fixed; bottom: 20px; left: 20px;
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; z-index: 100;
+}
+.back-btn:hover { background: rgba(255,255,255,0.25); }
+
+#gameInfo {
+  text-align: center; font-size: 16px; color: #aaa; margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .games-grid { grid-template-columns: repeat(2, 1fr); }
+  .forum-input-area { flex-direction: column; }
+  #forumName { flex: none; }
+  .touch-pad { bottom: 80px; right: 10px; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 40px); }
+}

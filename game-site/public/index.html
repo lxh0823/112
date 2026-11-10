@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏大厅 V2.0 - 论坛 + 贪吃蛇</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 版本标签 -->
+<div class="version-tag">V 2.0</div>
+
+<!-- ========== 大厅 ========== -->
+<div id="lobby">
+  <h1>🎮 游戏大厅</h1>
+  <div class="games-grid">
+    <div class="game-card" onclick="openGame('snake')">
+      <div class="game-icon">🐍</div>
+      <div class="game-name">贪吃蛇</div>
+    </div>
+    <div class="game-card" onclick="openGame('tetris')">
+      <div class="game-icon">🧩</div>
+      <div class="game-name">俄罗斯方块</div>
+    </div>
+    <div class="game-card" onclick="openGame('brick')">
+      <div class="game-icon">🧱</div>
+      <div class="game-name">打砖块</div>
+    </div>
+    <div class="game-card" onclick="openGame('racing')">
+      <div class="game-icon">🏎️</div>
+      <div class="game-name">极速赛车</div>
+    </div>
+    <div class="game-card" onclick="openGame('memory')">
+      <div class="game-icon">🃏</div>
+      <div class="game-name">翻翻乐</div>
+    </div>
+    <div class="game-card" onclick="openGame('2048')">
+      <div class="game-icon">🔢</div>
+      <div class="game-name">2048</div>
+    </div>
+    <div class="game-card" onclick="openGame('tictactoe')">
+      <div class="game-icon">⭕</div>
+      <div class="game-name">井字棋</div>
+    </div>
+    <div class="game-card" onclick="openGame('shooter')">
+      <div class="game-icon">🚀</div>
+      <div class="game-name">太空射击</div>
+    </div>
+    <div class="game-card" onclick="openGame('target')">
+      <div class="game-icon">🎯</div>
+      <div class="game-name">打靶</div>
+    </div>
+    <div class="game-card" onclick="openTurret()">
+      <div class="game-icon">🏰</div>
+      <div class="game-name">联机炮台</div>
+      <span class="badge-online">联机</span>
+    </div>
+    <div class="game-card forum-card" onclick="openForum()">
+      <div class="game-icon">💬</div>
+      <div class="game-name">玩家论坛</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 论坛 ========== -->
+<div id="forum" class="page-hidden">
+  <div class="forum-container">
+    <h2>💬 玩家论坛</h2>
+    <div class="forum-input-area">
+      <input id="forumName" placeholder="昵称（可选）" maxlength="20">
+      <input id="forumMsg" placeholder="说点什么..." maxlength="500" onkeydown="if(event.key==='Enter')postMessage()">
+      <button onclick="postMessage()">发送</button>
+    </div>
+    <div id="forumList">
+      <p class="forum-empty">加载中...</p>
+    </div>
+  </div>
+  <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+</div>
+
+<!-- ========== 联机炮台 ========== -->
+<div id="turret-lobby" class="page-hidden">
+  <h2>🏰 联机炮台射击</h2>
+  <div class="turret-panel">
+    <input id="playerName" placeholder="输入昵称" maxlength="20" value="玩家">
+    <div class="turret-btns">
+      <button class="btn-orange" onclick="createRoom()">创建房间</button>
+    </div>
+    <div class="divider">— 或 —</div>
+    <div class="join-row">
+      <input id="roomInput" placeholder="房间号" maxlength="10">
+      <button class="btn-blue" onclick="joinRoom()">加入</button>
+    </div>
+    <div id="roomMsg"></div>
+    <div class="howto">
+      <p>🎮 <b>玩法</b>：WASD / 方向键移动炮台</p>
+      <p>💥 J / 空格 发射炮弹，先到 20 杀获胜</p>
+      <p>👥 支持 2-4 人对战</p>
+    </div>
+  </div>
+  <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+</div>
+
+<div id="turret-game" class="page-hidden">
+  <div id="turretHud">
+    <span id="turretScore">击杀: 0</span>
+    <span id="turretHealth">HP: 100</span>
+    <span id="turretRoom"></span>
+  </div>
+  <canvas id="turretCanvas" width="800" height="500"></canvas>
+  <div class="touch-pad">
+    <div></div><button onclick="turretMove('up')">W</button><div></div>
+    <button onclick="turretMove('left')">A</button>
+    <button onclick="turretShoot()">J</button>
+    <button onclick="turretMove('right')">D</button>
+  </div>
+  <button class="back-btn" onclick="exitTurret()">← 退出</button>
+</div>
+
+<!-- ========== 游戏区 ========== -->
+<div id="gameArea" class="page-hidden">
+  <canvas id="gameCanvas"></canvas>
+  <div id="gameInfo"></div>
+  <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+<script src="games.js"></script>
+<script src="turret.js"></script>
+<script src="forum.js"></script>
+</body>
+</html>
