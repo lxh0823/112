@@ -17,12 +17,30 @@ body {
 
 .page-hidden { display: none !important; }
 
+/* ========== 公告板 ========== */
+.notice-board {
+  position: fixed; top: 15px; left: 50%; transform: translateX(-50%) translateY(-60px);
+  background: rgba(20, 25, 60, 0.95); border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 30px; padding: 10px 22px; display: none; align-items: center; gap: 10px;
+  z-index: 998; max-width: 90vw; box-shadow: 0 4px 20px rgba(74,158,255,0.25);
+  transition: transform 0.5s ease;
+}
+.notice-board.notice-show { transform: translateX(-50%) translateY(0); }
+.notice-icon { font-size: 18px; }
+.notice-text { color: #e0e8ff; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70vw; }
+.notice-board:hover .notice-text { white-space: normal; max-width: 80vw; }
+
 /* ========== 大厅 ========== */
 #lobby { padding: 40px 20px; text-align: center; }
-#lobby h1 {
-  font-size: 32px; margin-bottom: 30px;
+.lobby-banner {
+  font-size: 32px; font-weight: bold; margin-bottom: 16px;
   background: linear-gradient(90deg, #66a6ff, #89f7fe);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.changelog {
+  max-width: 800px; margin: 0 auto 26px; padding: 12px 16px;
+  background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.25);
+  border-radius: 10px; font-size: 13px; color: #c9d8ff; line-height: 1.6; text-align: left;
 }
 .games-grid {
   display: grid;
