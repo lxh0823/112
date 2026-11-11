@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>游戏大厅 V2.5</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="version-tag">V 2.5</div>
+<div id="noticeBar" class="notice-bar"></div>
+<div id="authBar" class="auth-bar">
+  <span id="authStatus">未登录</span>
+  <button onclick="showRegister()">注册</button>
+  <button onclick="showLogin()">登录</button>
+  <button onclick="logout()" id="logoutBtn" class="hidden">退出</button>
+</div>
+<div id="lobby"><h1>游戏大厅</h1>
+  <div class="games-grid">
+    <div class="game-card" onclick="startGame('snake')"><div class="game-icon">🐍</div><div class="game-name">贪吃蛇</div></div>
+    <div class="game-card" onclick="startGame('tetris')"><div class="game-icon">🧱</div><div class="game-name">俄罗斯方块</div></div>
+    <div class="game-card" onclick="startGame('2048')"><div class="game-icon">🔢</div><div class="game-name">2048</div></div>
+    <div class="game-card" onclick="startGame('breakout')"><div class="game-icon">🧨</div><div class="game-name">打砖块</div></div>
+    <div class="game-card" onclick="startGame('racer')"><div class="game-icon">🏎️</div><div class="game-name">极速赛车</div></div>
+    <div class="game-card" onclick="startGame('memory')"><div class="game-icon">🃏</div><div class="game-name">翻翻乐</div></div>
+    <div class="game-card" onclick="startGame('tictactoe')"><div class="game-icon">⭕</div><div class="game-name">井字棋</div></div>
+    <div class="game-card" onclick="startGame('shooter')"><div class="game-icon">🚀</div><div class="game-name">太空射击</div></div>
+    <div class="game-card" onclick="startGame('target')"><div class="game-icon">🎯</div><div class="game-name">打靶</div></div>
+    <div class="game-card" onclick="openTurret()"><div class="game-icon">🔫</div><div class="game-name">联机炮台</div></div>
+    <div class="game-card" onclick="openForum()"><div class="game-icon">💬</div><div class="game-name">玩家论坛</div></div>
+  </div>
+  <div class="changelog"><h3>V2.5 更新</h3>
+    <ul><li>注册/登录</li><li>论坛自动带昵称</li><li>联机炮台自动用登录名</li><li>贪吃蛇1200x1200</li><li>炮弹/转向/加入修复</li><li>滚动公告</li></ul>
+  </div>
+</div>
+
+<div id="registerModal" class="modal hidden"><div class="modal-content">
+  <h3>注册</h3>
+  <input id="regName" placeholder="昵称">
+  <input id="regPwd" type="password" placeholder="密码(至少6位)">
+  <input id="regPwd2" type="password" placeholder="确认密码">
+  <p id="regMsg"></p>
+  <button onclick="doRegister()">注册</button>
+  <button onclick="hideRegister()">取消</button>
+</div></div>
+
+<div id="loginModal" class="modal hidden"><div class="modal-content">
+  <h3>登录</h3>
+  <input id="loginName" placeholder="昵称">
+  <input id="loginPwd" type="password" placeholder="密码">
+  <p id="loginMsg"></p>
+  <button onclick="doLogin()">登录</button>
+  <button onclick="hideLogin()">取消</button>
+</div></div>
+
+<div id="forum" class="hidden">
+  <h2 style="text-align:center">💬 玩家论坛</h2>
+  <div class="forum-box">
+    <div style="display:flex;gap:10px;margin-bottom:15px">
+      <input id="forumName" placeholder="昵称" style="flex:1">
+      <input id="forumMsg" placeholder="说点什么..." maxlength="200" style="flex:3">
+      <button onclick="postMessage()">发送</button>
+    </div>
+    <div id="forumList"></div>
+  </div>
+  <button class="back-btn" onclick="backToLobby()">← 返回大厅</button>
+</div>
+
+<div id="turret-modal" class="modal hidden"><div class="modal-content">
+  <h2>🔫 联机炮台</h2>
+  <p id="turret-status"></p>
+  <input id="playerName" placeholder="昵称">
+  <button onclick="createRoom()">创建房间</button>
+  <input id="roomId" placeholder="房间号">
+  <button onclick="joinRoom()">加入</button>
+  <canvas id="turretCanvas" width="800" height="500" class="hidden"></canvas>
+  <button onclick="closeTurret()">返回</button>
+</div></div>
+
+<canvas id="gameCanvas" class="hidden"></canvas>
+<button id="backBtn" class="back-btn hidden" onclick="backToLobby()">← 返回大厅</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+<script src="games.js"></script>
+<script src="turret.js"></script>
+</body>
+</html>

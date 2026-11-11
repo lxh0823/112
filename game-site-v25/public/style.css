@@ -1,0 +1,30 @@
+﻿* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a2a; color: #fff; font-family: "Segoe UI", sans-serif; min-height: 100vh; }
+.version-tag { position: fixed; top: 10px; left: 10px; background: #4a9eff; padding: 4px 12px; border-radius: 12px; font-size: 12px; z-index: 999; font-weight: bold; }
+.notice-bar { background: linear-gradient(90deg, #ff6b6b, #4a9eff, #ffd93d); padding: 8px; text-align: center; font-size: 14px; }
+.auth-bar { position: fixed; top: 10px; right: 10px; z-index: 999; display: flex; gap: 8px; align-items: center; }
+.auth-bar button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; background: #4a9eff; color: #fff; }
+#logoutBtn { background: #666 !important; }
+#authStatus { font-size: 13px; color: #aaa; }
+h1 { text-align: center; margin: 30px 0 20px; font-size: 36px; }
+.games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+.game-card { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+.game-card:hover { transform: scale(1.05); background: rgba(74,158,255,0.2); }
+.game-icon { font-size: 40px; margin-bottom: 8px; }
+.game-name { font-size: 14px; color: #ddd; }
+.changelog { max-width: 900px; margin: 30px auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+.changelog h3 { color: #4a9eff; margin-bottom: 10px; }
+.changelog ul { list-style: none; }
+.changelog li { padding: 4px 0; font-size: 14px; color: #ccc; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #1a1a4a; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; }
+.modal-content input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; }
+.modal-content button { margin: 5px; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; background: #4a9eff; color: #fff; }
+.forum-box { max-width: 800px; margin: 0 auto; padding: 20px; }
+.forum-box input { padding: 10px; border-radius: 6px; border: 1px solid #555; background: #222; color: #fff; }
+.forum-box button { padding: 10px 20px; background: #4a9eff; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+#forumList { margin-top: 15px; max-height: 400px; overflow-y: auto; }
+#forumList > div { background: rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+#gameCanvas { display: block; margin: 20px auto; border: 2px solid #4a9eff; border-radius: 8px; }
+.back-btn { display: block; margin: 20px auto; padding: 12px 30px; background: #ff6b6b; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+.hidden { display: none !important; }
