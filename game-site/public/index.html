@@ -227,6 +227,8 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
 .acct-box input { width: 100%; box-sizing: border-box; padding: 11px; margin-bottom: 10px; font-size: 15px; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; }
 .acct-box .acct-submit { width: 100%; padding: 11px; border: 0; border-radius: 8px; background: #2ed573; color: #fff; font-size: 15px; cursor: pointer; }
 .acct-box .acct-switch { display: block; margin: 12px auto 0; background: none; border: 0; color: #9ab; cursor: pointer; font-size: 13px; }
+#acctModal .acct-show { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9ab; margin-bottom: 8px; cursor: pointer; }
+.acct-box .acct-show input { width: auto; margin: 0; }
 #acctErr { color: #ff6b6b; font-size: 13px; min-height: 18px; margin-bottom: 6px; }
 </style>
 </head>
@@ -235,7 +237,8 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
   <form class="acct-box" onsubmit="return acctSubmit(event)">
     <h3 id="acctTitle">登录</h3>
     <input id="acctUser" placeholder="用户名（2-16 位）" maxlength="16" autocomplete="username">
-    <input id="acctPass" type="password" placeholder="密码（至少 6 位）" maxlength="64">
+    <input id="acctPass" type="password" placeholder="密码（任意）" maxlength="200">
+    <label class="acct-show"><input type="checkbox" onchange="document.getElementById('acctPass').type=this.checked?'text':'password'"> 显示密码</label>
     <div id="acctErr"></div>
     <button class="acct-submit" type="submit" id="acctGo">登录</button>
     <button class="acct-switch" type="button" id="acctSwitch" onclick="acctToggle()">没有账号？去注册</button>
@@ -1598,6 +1601,7 @@ async function acctSubmit(e) {
     if (!res.ok) { err.textContent = data.error || '失败'; return false; }
     localStorage.setItem('acctToken', data.token); localStorage.setItem('acctName', data.username);
     document.getElementById('acctPass').value = '';
+    document.getElementById('acctPass').type = 'password'; document.querySelector('.acct-show input').checked = false;
     acctClose(); acctRender();
   } catch (x) { err.textContent = '网络错误，请重试'; }
   return false;
