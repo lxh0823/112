@@ -2,3 +2,5 @@ node_modules
 forum-data.json
 .agent-sessions
 game-site/public/update.zip
+game-site/users.json
+game-site/session-secret

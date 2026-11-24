@@ -215,9 +215,32 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
 #lobby .games-grid { max-width:none; }
 @media(max-width:760px) { #lobby.hub {padding:32px 18px} .hub-status {position:static;display:inline-block;margin-top:16px} .hub-small-grid {grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:520px) { .hub-grid,.hub-small-grid {grid-template-columns:1fr} .hub-section-head {display:block} .hub-section-head p {margin-top:4px} .hub-card {min-height:190px} }
+
+.acct-bar { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: #fff; margin: 16px 0 0 10px; vertical-align: top; }
+.acct-bar button { padding: 7px 14px; border: 1px solid #555; border-radius: 8px; background: rgba(20,20,40,.85); color: #fff; cursor: pointer; }
+.acct-bar button:hover { background: #2ed573; border-color: #2ed573; }
+.acct-bar .acct-name { background: rgba(20,20,40,.85); padding: 7px 12px; border-radius: 8px; }
+#acctModal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100; display: none; align-items: center; justify-content: center; }
+#acctModal.open { display: flex; }
+.acct-box { background: #1a1a2e; border: 1px solid #444; border-radius: 12px; padding: 24px; width: min(340px, 90vw); color: #fff; }
+.acct-box h3 { margin: 0 0 14px; color: #2ed573; text-align: center; }
+.acct-box input { width: 100%; box-sizing: border-box; padding: 11px; margin-bottom: 10px; font-size: 15px; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; }
+.acct-box .acct-submit { width: 100%; padding: 11px; border: 0; border-radius: 8px; background: #2ed573; color: #fff; font-size: 15px; cursor: pointer; }
+.acct-box .acct-switch { display: block; margin: 12px auto 0; background: none; border: 0; color: #9ab; cursor: pointer; font-size: 13px; }
+#acctErr { color: #ff6b6b; font-size: 13px; min-height: 18px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
+<div id="acctModal" onclick="if(event.target===this)acctClose()">
+  <form class="acct-box" onsubmit="return acctSubmit(event)">
+    <h3 id="acctTitle">登录</h3>
+    <input id="acctUser" placeholder="用户名（2-16 位）" maxlength="16" autocomplete="username">
+    <input id="acctPass" type="password" placeholder="密码（至少 6 位）" maxlength="64">
+    <div id="acctErr"></div>
+    <button class="acct-submit" type="submit" id="acctGo">登录</button>
+    <button class="acct-switch" type="button" id="acctSwitch" onclick="acctToggle()">没有账号？去注册</button>
+  </form>
+</div>
 <div class="version-tag">V 3.0</div>
 <div id="lobby" class="hub">
   <header class="hub-head">
@@ -226,6 +249,7 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
     <p class="hub-intro">进入联机炮台创建或加入房间，也可以直接玩大厅里的其他小游戏。页面保留原站联机与游戏功能。</p>
     <span class="hub-status">在线游戏大厅 · V3.0</span>
     <button id="installBtn" class="hub-action" type="button" onclick="installApp()" style="margin-top:16px">📲 下载安装 App</button>
+    <span class="acct-bar" id="acctBar"></span>
   </header>
   <section class="hub-section">
     <div class="hub-section-head"><h2>本地游戏</h2><p>无需联网，直接开始</p></div>
@@ -1538,6 +1562,56 @@ function turretStop() {
   turretBullets = [];
 }
 </script>
+<script>// ========== 账号 ==========
+let acctMode = 'login';
+const acctToken = () => localStorage.getItem('acctToken') || '';
+function acctName() { return localStorage.getItem('acctName') || ''; }
+function acctHeaders() { const t = acctToken(); return t ? { Authorization: 'Bearer ' + t } : {}; }
+function acctRender() {
+  const bar = document.getElementById('acctBar'), n = acctName();
+  bar.innerHTML = n
+    ? '<span class="acct-name">👤 ' + escapeHtml(n) + '</span><button type="button" onclick="acctLogout()">退出</button>'
+    : '<button type="button" onclick="acctOpen(\'login\')">登录</button><button type="button" onclick="acctOpen(\'register\')">注册</button>';
+  const fn = document.getElementById('forumName'), pn = document.getElementById('playerName');
+  if (fn) { fn.value = n || fn.value; fn.disabled = !!n; }
+  if (pn && n) pn.value = n;
+}
+function acctOpen(mode) { acctMode = mode; acctLayout(); document.getElementById('acctModal').classList.add('open'); document.getElementById('acctUser').focus(); }
+function acctClose() { document.getElementById('acctModal').classList.remove('open'); document.getElementById('acctErr').textContent = ''; }
+function acctToggle() { acctMode = acctMode === 'login' ? 'register' : 'login'; acctLayout(); }
+function acctLayout() {
+  const reg = acctMode === 'register';
+  document.getElementById('acctTitle').textContent = reg ? '注册' : '登录';
+  document.getElementById('acctGo').textContent = reg ? '注册' : '登录';
+  document.getElementById('acctSwitch').textContent = reg ? '已有账号？去登录' : '没有账号？去注册';
+  document.getElementById('acctPass').autocomplete = reg ? 'new-password' : 'current-password';
+  document.getElementById('acctErr').textContent = '';
+}
+async function acctSubmit(e) {
+  e.preventDefault();
+  const err = document.getElementById('acctErr');
+  if (location.protocol === 'file:') { err.textContent = '请通过网站地址打开后再注册'; return false; }
+  try {
+    const res = await fetch('/api/' + acctMode, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: document.getElementById('acctUser').value, password: document.getElementById('acctPass').value }) });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error || '失败'; return false; }
+    localStorage.setItem('acctToken', data.token); localStorage.setItem('acctName', data.username);
+    document.getElementById('acctPass').value = '';
+    acctClose(); acctRender();
+  } catch (x) { err.textContent = '网络错误，请重试'; }
+  return false;
+}
+function acctLogout() { localStorage.removeItem('acctToken'); localStorage.removeItem('acctName'); const fn = document.getElementById('forumName'); if (fn) fn.value = ''; acctRender(); }
+(async function acctInit() {
+  acctRender();
+  if (!acctToken() || location.protocol === 'file:') return;
+  try { const r = await fetch('/api/me', { headers: acctHeaders() });
+    if (r.ok) { localStorage.setItem('acctName', (await r.json()).username); } else if (r.status === 401) { localStorage.removeItem('acctToken'); localStorage.removeItem('acctName'); }
+  } catch (e) {}
+  acctRender();
+})();
+</script>
 <script>// ========== 论坛功能 ==========
 
 function openForum() {
@@ -1577,7 +1651,7 @@ function renderMessages(messages) {
   list.innerHTML = messages.map(m => `
     <div class="forum-item">
       <div class="forum-item-header">
-        <span class="forum-item-name">${escapeHtml(m.name)}</span>
+        <span class="forum-item-name">${m.member ? '✔ ' : ''}${escapeHtml(m.name)}</span>
         <span class="forum-item-time">${escapeHtml(m.time)}</span>
       </div>
       <div class="forum-item-msg">${escapeHtml(m.msg)}</div>
@@ -1597,10 +1671,10 @@ async function postMessage() {
     if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
       const res = await fetch('/api/forum', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...acctHeaders() },
         body: JSON.stringify({ name, msg })
       });
-      if (!res.ok) throw new Error('发送失败');
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || '发送失败');
     } else {
       // 本地双击模式：存 localStorage
       const messages = JSON.parse(localStorage.getItem('forumMessages') || '[]');
