@@ -34,7 +34,8 @@
         }
       ],
       "icon": "icon.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "executableName": "GameHub"
     },
     "nsis": {
       "oneClick": false,
