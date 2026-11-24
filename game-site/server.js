@@ -18,8 +18,8 @@ app.use(express.json());
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
-let users = {};
-try { if (fs.existsSync(USERS_FILE)) users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch (e) { users = {}; }
+let users = Object.create(null); // 无原型，避免 constructor 之类的用户名撞到内置属性
+try { if (fs.existsSync(USERS_FILE)) Object.assign(users, JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'))); } catch (e) {}
 function saveUsers() {
   const tmp = USERS_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(users));
@@ -68,13 +68,12 @@ function limited(req) {
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.some(t => now - t < 60000)) hits.delete(k); }, 60000).unref();
 
-const NAME_RE = /^[\u4e00-\u9fa5A-Za-z0-9_]{2,16}$/;
 app.set('trust proxy', 1);
 app.post('/api/register', (req, res) => {
   if (limited(req)) return res.status(429).json({ error: '操作太频繁，请稍后再试' });
   const name = String(req.body.username || '').trim();
   const pw = String(req.body.password || '');
-  if (!NAME_RE.test(name)) return res.status(400).json({ error: '用户名需为 2-16 位的中文、字母、数字或下划线' });
+  if (!name || name.length > 50) return res.status(400).json({ error: '请输入用户名（最长 50 个字符）' });
   if (!pw || pw.length > 200) return res.status(400).json({ error: '请输入密码' });
   if (users[keyOf(name)]) return res.status(409).json({ error: '用户名已被注册' });
   const salt = crypto.randomBytes(16).toString('hex');

@@ -1,4 +1,4 @@
-const CACHE = 'game-hub-v7';
+const CACHE = 'game-hub-v8';
 const SHELL = ['/', '/manifest.webmanifest', '/app-icon-192.png', '/app-icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

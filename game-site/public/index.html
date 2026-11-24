@@ -233,10 +233,10 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
 </style>
 </head>
 <body>
-<div id="acctModal" onclick="if(event.target===this)acctClose()">
+<div id="acctModal">
   <form class="acct-box" onsubmit="return acctSubmit(event)">
     <h3 id="acctTitle">登录</h3>
-    <input id="acctUser" placeholder="用户名（2-16 位）" maxlength="16" autocomplete="username">
+    <input id="acctUser" placeholder="用户名（任意）" maxlength="50" autocomplete="username">
     <input id="acctPass" type="password" placeholder="密码（任意）" maxlength="200">
     <label class="acct-show"><input type="checkbox" onchange="document.getElementById('acctPass').type=this.checked?'text':'password'"> 显示密码</label>
     <div id="acctErr"></div>
@@ -1566,7 +1566,7 @@ function turretStop() {
 }
 </script>
 <script>// ========== 账号 ==========
-let acctMode = 'login';
+let acctMode = 'register';
 const acctToken = () => localStorage.getItem('acctToken') || '';
 function acctName() { return localStorage.getItem('acctName') || ''; }
 function acctHeaders() { const t = acctToken(); return t ? { Authorization: 'Bearer ' + t } : {}; }
@@ -1606,14 +1606,18 @@ async function acctSubmit(e) {
   } catch (x) { err.textContent = '网络错误，请重试'; }
   return false;
 }
-function acctLogout() { localStorage.removeItem('acctToken'); localStorage.removeItem('acctName'); const fn = document.getElementById('forumName'); if (fn) fn.value = ''; acctRender(); }
+function acctLogout() { localStorage.removeItem('acctToken'); localStorage.removeItem('acctName'); const fn = document.getElementById('forumName'); if (fn) fn.value = ''; acctRender(); acctRequire(); }
+// 未登录时强制弹出注册/登录，登录成功前无法关闭
+function acctRequire() { if (location.protocol !== 'file:' && !acctName()) acctOpen(acctMode); }
 (async function acctInit() {
   acctRender();
-  if (!acctToken() || location.protocol === 'file:') return;
+  if (location.protocol === 'file:') return;
+  if (!acctToken()) { acctRequire(); return; }
   try { const r = await fetch('/api/me', { headers: acctHeaders() });
     if (r.ok) { localStorage.setItem('acctName', (await r.json()).username); } else if (r.status === 401) { localStorage.removeItem('acctToken'); localStorage.removeItem('acctName'); }
   } catch (e) {}
   acctRender();
+  acctRequire();
 })();
 </script>
 <script>// ========== 论坛功能 ==========
