@@ -98,7 +98,7 @@ app.get('/api/me', (req, res) => {
 });
 
 // ========== 论坛留言持久化 ==========
-const DATA_FILE = path.join(__dirname, 'forum-data.json');
+const DATA_FILE = path.join(DATA_DIR, 'forum-data.json');
 let forumMessages = [];
 try {
   if (fs.existsSync(DATA_FILE)) forumMessages = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
