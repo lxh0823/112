@@ -75,7 +75,7 @@ app.post('/api/register', (req, res) => {
   const name = String(req.body.username || '').trim();
   const pw = String(req.body.password || '');
   if (!NAME_RE.test(name)) return res.status(400).json({ error: '用户名需为 2-16 位的中文、字母、数字或下划线' });
-  if (pw.length < 6 || pw.length > 64) return res.status(400).json({ error: '密码需为 6-64 位' });
+  if (!pw || pw.length > 200) return res.status(400).json({ error: '请输入密码' });
   if (users[keyOf(name)]) return res.status(409).json({ error: '用户名已被注册' });
   const salt = crypto.randomBytes(16).toString('hex');
   users[keyOf(name)] = { name, salt, hash: hashPw(pw, salt), created: Date.now() };
