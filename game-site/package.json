@@ -1,6 +1,6 @@
 {
   "name": "game-site",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "游戏大厅 - 含论坛与贪吃蛇等小游戏",
   "main": "server.js",
   "scripts": {

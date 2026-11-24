@@ -218,13 +218,14 @@ body { background: radial-gradient(ellipse at 52% -18%, #24395f 0, transparent 5
 </style>
 </head>
 <body>
-<div class="version-tag">V 2.1</div>
+<div class="version-tag">V 3.0</div>
 <div id="lobby" class="hub">
   <header class="hub-head">
     <div class="hub-eyebrow">SMALL GAME · ONLINE LOBBY</div>
     <h1 class="hub-title">小游戏大厅</h1>
     <p class="hub-intro">进入联机炮台创建或加入房间，也可以直接玩大厅里的其他小游戏。页面保留原站联机与游戏功能。</p>
-    <span class="hub-status">在线游戏大厅</span>
+    <span class="hub-status">在线游戏大厅 · V3.0</span>
+    <button id="installBtn" class="hub-action" type="button" onclick="installApp()" style="margin-top:16px">📲 下载安装 App</button>
   </header>
   <section class="hub-section">
     <div class="hub-section-head"><h2>本地游戏</h2><p>无需联网，直接开始</p></div>
@@ -418,6 +419,7 @@ function joinRoom() {
 
 // ========== 公告板（更新公告） ==========
 const NOTICE_DATA = [
+  '🎉 V3.0 上线！大厅可安装为 App，新增 3D 枪战与霓虹跑者 3D',
   '🎉 V2.0 上线！联机炮台新增炮弹与转向，支持 2-4 人开房对战',
   '🐍 贪吃蛇场地扩大至 1200×1200，挑战更长身长',
   '💬 玩家论坛已开放，欢迎留言交流', '🏰 联机炮台：WASD 移动，J/空格/鼠标射击，先到 20 杀获胜',
@@ -1633,6 +1635,28 @@ function exit3D() {
   if (document.pointerLockElement || (f.contentDocument && f.contentDocument.pointerLockElement)) document.exitPointerLock();
   f.src = 'about:blank';
   showPage('lobby');
+}
+
+// ========== 安装为 App ==========
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; });
+window.addEventListener('appinstalled', () => { deferredInstall = null; const b = document.getElementById('installBtn'); if (b) b.style.display = 'none'; });
+if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('installBtn'); if (b) b.style.display = 'none'; });
+}
+async function installApp() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    await deferredInstall.userChoice;
+    deferredInstall = null;
+    return;
+  }
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    alert('iPhone / iPad 安装方法：\n1. 用 Safari 打开本页\n2. 点底部“分享”按钮\n3. 选择“添加到主屏幕”');
+  } else {
+    alert('安装方法：\n手机 Chrome / Edge：点右上角菜单，选“安装应用”或“添加到主屏幕”\n电脑 Chrome / Edge：点地址栏右侧的安装图标\n（需要使用 https 网址访问）');
+  }
 }
 function openLocalPractice() {
   showPage('localPracticePage');
