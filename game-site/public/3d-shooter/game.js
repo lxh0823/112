@@ -48,8 +48,8 @@ let gunGroup;
 // ========== 初始化场景 ==========
 function initScene() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a1a);
-  scene.fog = new THREE.Fog(0x0a0a1a, 20, 80);
+  scene.background = new THREE.Color(0x8ec9f0);
+  scene.fog = new THREE.Fog(0x8ec9f0, 40, 140);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
   camera.position.set(0, player.height, 0);
@@ -64,17 +64,17 @@ function initScene() {
   raycaster = new THREE.Raycaster();
 
   // 光照
-  const ambient = new THREE.AmbientLight(0x404060, 1.2);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.9);
   scene.add(ambient);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
   dirLight.position.set(20, 40, 20);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.set(2048, 2048);
   scene.add(dirLight);
 
   // 半球光（天空/地面颜色）
-  const hemi = new THREE.HemisphereLight(0x6688ff, 0x223322, 0.5);
+  const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x88aa66, 0.9);
   scene.add(hemi);
 
   buildArena();
@@ -89,9 +89,9 @@ function buildArena() {
   // 地面
   const floorGeo = new THREE.PlaneGeometry(size, size);
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x333344,
-    roughness: 0.8,
-    metalness: 0.2
+    color: 0x7fa65a,
+    roughness: 0.9,
+    metalness: 0.0
   });
   floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
@@ -99,13 +99,13 @@ function buildArena() {
   scene.add(floor);
 
   // 地面网格线
-  const grid = new THREE.GridHelper(size, 60, 0x444466, 0x222233);
+  const grid = new THREE.GridHelper(size, 60, 0x6f9650, 0x6f9650);
   grid.position.y = 0.01;
   scene.add(grid);
 
   // 围墙
   const wallH = 8;
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x554466, roughness: 0.7 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xc9b79c, roughness: 0.8 });
   const wallT = 2;
 
   const wallDefs = [
@@ -125,10 +125,10 @@ function buildArena() {
   });
 
   // 障碍物（箱子）
-  const boxMat = new THREE.MeshStandardMaterial({ color: 0x776655, roughness: 0.6 });
+  const boxMat = new THREE.MeshStandardMaterial({ color: 0xd9a35f, roughness: 0.7 });
   const boxPositions = [
     [-10, 1, -8], [12, 1.5, 5], [-5, 2, 15], [8, 1, -15],
-    [0, 1, 0], [-18, 1.5, -2], [18, 1, 10], [5, 2, 20],
+    [-8, 1, 8], [-18, 1.5, -2], [18, 1, 10], [5, 2, 20],
     [-22, 1, 18], [22, 1.5, -18], [-12, 1, -20], [15, 2, -5]
   ];
   boxPositions.forEach((p, i) => {
@@ -142,7 +142,7 @@ function buildArena() {
   });
 
   // 柱子
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x665577, roughness: 0.5, metalness: 0.3 });
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0xb8c4cf, roughness: 0.6, metalness: 0.1 });
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2;
     const r = 20;
