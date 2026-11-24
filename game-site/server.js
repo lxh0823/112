@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,8 +12,93 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.static('public'));
 app.use(express.json());
 
+
+// ========== 账号：注册 / 登录 ==========
+// 数据目录：Railway 上挂 Volume 后设置 DATA_DIR 指向挂载路径，账号才能在重新部署后保留
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+let users = {};
+try { if (fs.existsSync(USERS_FILE)) users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch (e) { users = {}; }
+function saveUsers() {
+  const tmp = USERS_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(users));
+  fs.renameSync(tmp, USERS_FILE);
+}
+function getSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  const f = path.join(DATA_DIR, 'session-secret');
+  try { return fs.readFileSync(f, 'utf8'); } catch (e) {}
+  const s = crypto.randomBytes(32).toString('hex');
+  try { fs.writeFileSync(f, s, { mode: 0o600 }); } catch (e) {}
+  return s;
+}
+const SECRET = getSecret();
+const TOKEN_TTL = 30 * 24 * 3600 * 1000;
+
+const keyOf = (name) => name.toLowerCase();
+function hashPw(pw, salt) { return crypto.scryptSync(pw, salt, 64).toString('hex'); }
+function signToken(name) {
+  const body = Buffer.from(JSON.stringify({ u: name, e: Date.now() + TOKEN_TTL })).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(body).digest('base64url');
+  return body + '.' + sig;
+}
+function userFromReq(req) {
+  const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+  if (!m) return null;
+  const [body, sig] = m[1].split('.');
+  if (!body || !sig) return null;
+  const good = crypto.createHmac('sha256', SECRET).update(body).digest('base64url');
+  const a = Buffer.from(sig), b = Buffer.from(good);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const p = JSON.parse(Buffer.from(body, 'base64url').toString());
+    const u = users[keyOf(p.u)];
+    return p.e > Date.now() && u ? u.name : null;
+  } catch (e) { return null; }
+}
+
+// 简单限流：同一 IP 每分钟最多 20 次登录/注册
+const hits = new Map();
+function limited(req) {
+  const now = Date.now(), ip = req.ip;
+  const arr = (hits.get(ip) || []).filter(t => now - t < 60000);
+  arr.push(now); hits.set(ip, arr);
+  return arr.length > 20;
+}
+setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.some(t => now - t < 60000)) hits.delete(k); }, 60000).unref();
+
+const NAME_RE = /^[\u4e00-\u9fa5A-Za-z0-9_]{2,16}$/;
+app.set('trust proxy', 1);
+app.post('/api/register', (req, res) => {
+  if (limited(req)) return res.status(429).json({ error: '操作太频繁，请稍后再试' });
+  const name = String(req.body.username || '').trim();
+  const pw = String(req.body.password || '');
+  if (!NAME_RE.test(name)) return res.status(400).json({ error: '用户名需为 2-16 位的中文、字母、数字或下划线' });
+  if (pw.length < 6 || pw.length > 64) return res.status(400).json({ error: '密码需为 6-64 位' });
+  if (users[keyOf(name)]) return res.status(409).json({ error: '用户名已被注册' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  users[keyOf(name)] = { name, salt, hash: hashPw(pw, salt), created: Date.now() };
+  saveUsers();
+  res.json({ ok: true, username: name, token: signToken(name) });
+});
+app.post('/api/login', (req, res) => {
+  if (limited(req)) return res.status(429).json({ error: '操作太频繁，请稍后再试' });
+  const name = String(req.body.username || '').trim();
+  const pw = String(req.body.password || '');
+  const u = users[keyOf(name)];
+  const ok = u && crypto.timingSafeEqual(Buffer.from(hashPw(pw, u.salt), 'hex'), Buffer.from(u.hash, 'hex'));
+  if (!ok) return res.status(401).json({ error: '用户名或密码错误' });
+  res.json({ ok: true, username: u.name, token: signToken(u.name) });
+});
+app.get('/api/me', (req, res) => {
+  const name = userFromReq(req);
+  if (!name) return res.status(401).json({ error: '未登录' });
+  res.json({ username: name });
+});
+
 // ========== 论坛留言持久化 ==========
-const DATA_FILE = path.join(__dirname, 'forum-data.json');
+const DATA_FILE = path.join(DATA_DIR, 'forum-data.json');
 let forumMessages = [];
 try {
   if (fs.existsSync(DATA_FILE)) forumMessages = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -24,10 +110,12 @@ function saveMessages() {
 
 app.get('/api/forum', (req, res) => res.json({ messages: forumMessages }));
 app.post('/api/forum', (req, res) => {
-  const name = (req.body.name || '匿名玩家').toString().slice(0, 20);
+  const me = userFromReq(req);
+  const name = me || (req.body.name || '匿名玩家').toString().slice(0, 20);
+  if (!me && users[keyOf(name.trim())]) return res.status(409).json({ error: '该昵称已被注册，请登录后使用' });
   const msg = (req.body.msg || '').toString().slice(0, 500);
   if (!msg.trim()) return res.status(400).json({ error: '内容不能为空' });
-  const entry = { id: Date.now(), name, msg, time: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) };
+  const entry = { id: Date.now(), name, msg, member: !!me, time: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) };
   forumMessages.unshift(entry);
   if (forumMessages.length > 200) forumMessages = forumMessages.slice(0, 200);
   saveMessages();
