@@ -136,11 +136,25 @@ app.get('/api/rooms', (req, res) => {
   res.json({ rooms: list });
 });
 
-// ========== 联机炮台 ==========
+// ========== 联机炮台（服务端判定命中/击杀/胜负） ==========
 const rooms = {};
+const ARENA_W = 800, ARENA_H = 500;
+const BULLET_SPEED = 8, HIT_RADIUS = 20, DAMAGE = 10;
+const WIN_KILLS = 20, SHOT_COOLDOWN = 250, SPAWN_PROTECT = 1500, ROUND_RESET = 5000;
+let nextBulletId = 1;
 
+const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const randSpawn = () => ({ x: 60 + Math.random() * (ARENA_W - 120), y: 60 + Math.random() * (ARENA_H - 120) });
+
+function newPlayer(id, name) {
+  return { id, name: String(name || '玩家').slice(0, 20), x: 400, y: 250, angle: -Math.PI / 2, hp: 100, kills: 0, lastShot: 0, protectUntil: 0 };
+}
 function publicPlayer(p) {
   return { id: p.id, name: p.name, x: p.x, y: p.y, angle: p.angle || 0, hp: p.hp, kills: p.kills };
+}
+function roomView(room) {
+  return { id: room.id, players: room.players.map(publicPlayer) };
 }
 
 io.on('connection', (socket) => {
@@ -151,52 +165,51 @@ io.on('connection', (socket) => {
     let roomId;
     do { roomId = Math.random().toString(36).substr(2, 6).toUpperCase(); }
     while (rooms[roomId]);
-    rooms[roomId] = {
-      id: roomId,
-      players: [{ id: socket.id, name: name || '玩家', x: 400, y: 250, angle: -Math.PI / 2, hp: 100, kills: 0 }]
-    };
+    rooms[roomId] = { id: roomId, players: [newPlayer(socket.id, name)], bullets: [], over: false };
     socket.join(roomId);
-    // 创建者立即拿到房间号
     socket.emit('roomCreated', { roomId });
-    io.to(roomId).emit('roomUpdate', rooms[roomId]);
+    io.to(roomId).emit('roomUpdate', roomView(rooms[roomId]));
     console.log('创建房间:', roomId);
   });
 
-  // 加入房间
-  socket.on('joinRoom', ({ roomId, name }) => {
+  // 加入房间（断线重连时客户端也会再次调用）
+  socket.on('joinRoom', ({ roomId, name } = {}) => {
     const room = rooms[roomId];
     if (!room) { socket.emit('joinFailed', '房间不存在，请检查房间号'); return; }
-    if (room.players.length >= 4) { socket.emit('joinFailed', '房间已满（最多4人）'); return; }
-    room.players.push({ id: socket.id, name: name || '玩家', x: 400, y: 250, angle: -Math.PI / 2, hp: 100, kills: 0 });
+    if (!room.players.some(p => p.id === socket.id)) {
+      if (room.players.length >= 4) { socket.emit('joinFailed', '房间已满（最多4人）'); return; }
+      room.players.push(newPlayer(socket.id, name));
+    }
     socket.join(roomId);
-    // 新加入者先拿到完整玩家列表
-    socket.emit('joinedRoom', {
-      roomId,
-      players: room.players.map(publicPlayer)
-    });
-    // 全房间同步
-    io.to(roomId).emit('roomUpdate', room);
+    socket.emit('joinedRoom', { roomId, players: room.players.map(publicPlayer) });
+    io.to(roomId).emit('roomUpdate', roomView(room));
     console.log('玩家加入:', roomId, '当前', room.players.length, '人');
   });
 
-  // 位置同步
-  socket.on('gameUpdate', ({ roomId, x, y, angle }) => {
+  // 位置同步（只接受合法数值并限制在场地内）
+  socket.on('gameUpdate', ({ roomId, x, y, angle } = {}) => {
     const room = rooms[roomId];
     if (!room) return;
     const p = room.players.find(p => p.id === socket.id);
     if (!p) return;
-    p.x = x; p.y = y; if (angle !== undefined) p.angle = angle;
+    p.x = clamp(num(x, p.x), 0, ARENA_W);
+    p.y = clamp(num(y, p.y), 0, ARENA_H);
+    if (angle !== undefined) p.angle = num(angle, p.angle);
     socket.to(roomId).emit('gameUpdate', publicPlayer(p));
   });
 
-  // 开炮
-  socket.on('shoot', (data) => {
+  // 开炮：炮弹由服务端创建（起点取服务端记录的位置），并限制射速
+  socket.on('shoot', (data = {}) => {
     const room = rooms[data.roomId];
-    if (!room) return;
-    socket.to(data.roomId).emit('shoot', {
-      playerId: socket.id,
-      x: data.x, y: data.y, angle: data.angle
-    });
+    if (!room || room.over) return;
+    const p = room.players.find(p => p.id === socket.id);
+    const now = Date.now();
+    if (!p || now - p.lastShot < SHOT_COOLDOWN) return;
+    p.lastShot = now;
+    p.angle = num(data.angle, p.angle);
+    const b = { id: nextBulletId++, owner: socket.id, x: p.x, y: p.y, angle: p.angle };
+    room.bullets.push(b);
+    io.to(room.id).emit('shoot', { id: b.id, playerId: b.owner, x: b.x, y: b.y, angle: b.angle });
   });
 
   // 掉线
@@ -206,17 +219,61 @@ io.on('connection', (socket) => {
       const idx = rooms[rid].players.findIndex(p => p.id === socket.id);
       if (idx !== -1) {
         rooms[rid].players.splice(idx, 1);
+        rooms[rid].bullets = rooms[rid].bullets.filter(b => b.owner !== socket.id);
         if (rooms[rid].players.length === 0) {
           delete rooms[rid];
           console.log('房间解散:', rid);
         } else {
-          io.to(rid).emit('roomUpdate', rooms[rid]);
+          io.to(rid).emit('roomUpdate', roomView(rooms[rid]));
           io.to(rid).emit('playerLeft', socket.id);
         }
       }
     }
   });
 });
+
+// 服务端炮弹模拟：60Hz 移动炮弹、判定命中、结算击杀与胜负
+function tickRooms() {
+  const now = Date.now();
+  for (const rid in rooms) {
+    const room = rooms[rid];
+    if (!room.bullets.length) continue;
+    for (let i = room.bullets.length - 1; i >= 0; i--) {
+      const b = room.bullets[i];
+      b.x += Math.cos(b.angle) * BULLET_SPEED;
+      b.y += Math.sin(b.angle) * BULLET_SPEED;
+      if (b.x < 0 || b.x > ARENA_W || b.y < 0 || b.y > ARENA_H) { room.bullets.splice(i, 1); continue; }
+      const victim = room.players.find(p => p.id !== b.owner && now >= p.protectUntil &&
+        (p.x - b.x) ** 2 + (p.y - b.y) ** 2 < HIT_RADIUS * HIT_RADIUS);
+      if (!victim) continue;
+      room.bullets.splice(i, 1);
+      victim.hp -= DAMAGE;
+      io.to(room.id).emit('hit', { bulletId: b.id, victim: victim.id, hp: Math.max(0, victim.hp) });
+      if (victim.hp > 0) continue;
+      const killer = room.players.find(p => p.id === b.owner);
+      if (killer) killer.kills++;
+      const pos = randSpawn();
+      victim.hp = 100; victim.x = pos.x; victim.y = pos.y; victim.protectUntil = now + SPAWN_PROTECT;
+      io.to(room.id).emit('kill', {
+        killer: b.owner, killerName: killer ? killer.name : '', kills: killer ? killer.kills : 0,
+        victim: victim.id, victimName: victim.name, x: victim.x, y: victim.y
+      });
+      if (killer && killer.kills >= WIN_KILLS && !room.over) {
+        room.over = true;
+        room.bullets = [];
+        io.to(room.id).emit('gameOver', { winner: killer.id, winnerName: killer.name });
+        setTimeout(() => {
+          if (!rooms[rid]) return;
+          room.over = false;
+          room.players.forEach(p => { Object.assign(p, { kills: 0, hp: 100, x: 400, y: 250, protectUntil: Date.now() + SPAWN_PROTECT }); });
+          io.to(room.id).emit('newRound', roomView(room));
+        }, ROUND_RESET);
+        break;
+      }
+    }
+  }
+}
+setInterval(tickRooms, 1000 / 60).unref();
 
 // ========== 启动（动态端口 + 0.0.0.0） ==========
 const PORT = process.env.PORT || 3000;
