@@ -160,7 +160,7 @@ body {
 }
 
 /* ========== 通用 ========== */
-canvas { display: block; margin: 10px auto; border-radius: 8px; }
+canvas { display: block; margin: 10px auto; border-radius: 8px; max-width: 100%; height: auto; }
 .back-btn {
   position: fixed; bottom: 20px; left: 20px;
   background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
@@ -396,12 +396,6 @@ function openGame(name) {
   startGame(name);
 }
 
-// ========== 打开论坛 ==========
-function openForum() {
-  showPage('forum');
-  if (window.loadMessages) loadMessages();
-}
-
 // ========== 打开联机炮台 ==========
 function openTurret() {
   showPage('turret-lobby');
@@ -627,7 +621,10 @@ function startSnake(canvas, ctx, info) {
       return;
     }
     // 撞自己
-    for (const seg of snake) {
+    // 不吃食物时蛇尾这一帧会移开，所以不把它算作障碍
+    const willEat = head.x === food.x && head.y === food.y;
+    const body = willEat ? snake : snake.slice(0, -1);
+    for (const seg of body) {
       if (head.x === seg.x && head.y === seg.y) { gameOver(); return; }
     }
 
@@ -834,7 +831,7 @@ function startBrick(canvas, ctx, info) {
     if (ballY < ballR) ballDY *= -1;
     if (ballY > 550) { lives--; ballX = 400; ballY = 300; ballDX = 5; ballDY = -5; }
     // 挡板碰撞
-    if (ballY + ballR >= 520 && ballX >= paddleX && ballX <= paddleX + PADDLE_W) { ballDY = -Math.abs(ballDY); ballDX += (ballX - paddleX - PADDLE_W / 2) * 0.05; }
+    if (ballY + ballR >= 520 && ballX >= paddleX && ballX <= paddleX + PADDLE_W) { ballDY = -Math.abs(ballDY); ballDX = Math.max(-8, Math.min(8, ballDX + (ballX - paddleX - PADDLE_W / 2) * 0.05)); }
     // 砖块碰撞
     bricks.forEach(b => {
       if (b.alive && ballX >= b.x && ballX <= b.x + b.w && ballY >= b.y && ballY <= b.y + b.h) {
@@ -881,7 +878,7 @@ function startRacing(canvas, ctx, info) {
     for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(i * 80, 0); ctx.lineTo(i * 80, 600); ctx.stroke(); }
     ctx.setLineDash([]);
 
-    speed += 0.2;
+    speed = Math.min(speed + 0.2, 16);
     score += 1;
 
     // 障碍物
@@ -931,7 +928,7 @@ function startMemory(canvas, ctx, info) {
 
   const clickHandler = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width), my = (e.clientY - rect.top) * (canvas.height / rect.height);
     const col = Math.floor(mx / 100), row = Math.floor(my / 125);
     const idx = row * 6 + col;
     if (idx < 0 || idx >= 24 || flipped.length >= 2) return;
@@ -1066,7 +1063,7 @@ function startTicTacToe(canvas, ctx, info) {
 
   const clickHandler = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width), my = (e.clientY - rect.top) * (canvas.height / rect.height);
     const idx = Math.floor(mx / 133) + Math.floor((my - 80) / 133) * 3;
     if (idx < 0 || idx > 8 || board[idx] || gameOver) return;
     board[idx] = current;
@@ -1184,7 +1181,7 @@ function startTarget(canvas, ctx, info) {
   const clickHandler = (e) => {
     if (!running) { running = true; score = 0; time = 30; hits = 0; misses = 0; targets = []; for (let i = 0; i < 5; i++) spawnTarget(); return; }
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width), my = (e.clientY - rect.top) * (canvas.height / rect.height);
     let hit = false;
     targets.forEach(t => {
       if (t.alive && Math.hypot(mx - t.x, my - t.y) < t.r) { t.alive = false; score += Math.floor(50 - t.r); hits++; hit = true; }
@@ -1239,6 +1236,12 @@ let turretOthers = {};
 let turretBullets = [];
 // 键盘状态必须在 turretTick 启动前初始化。
 let turretKeys = {};
+// 鼠标位置（画布坐标）；null 表示还没用过鼠标，此时按键移动会顺带转向
+let turretMouse = null;
+// 击杀提示与结束横幅
+let turretFeed = [];
+let turretBanner = null;
+function turretNote(text) { turretFeed.push({ text, until: Date.now() + 4000 }); if (turretFeed.length > 5) turretFeed.shift(); }
 
 const TURRET_SPEED = 4;
 const BULLET_SPEED = 8;
@@ -1255,11 +1258,17 @@ function turretInit() {
 
   turretSocket.on('connect', () => {
     console.log('[炮台] 已连接到服务器');
+    // 断线重连后 socket id 变了，需要重新进入原来的房间
+    if (turretRoomId) turretSocket.emit('joinRoom', { roomId: turretRoomId, name: turretName });
     const roomMsg = document.getElementById('roomMsg');
     if (roomMsg && roomMsg.textContent === '') {
       roomMsg.style.color = '#2ed573';
       roomMsg.textContent = '已连接服务器';
     }
+  });
+
+  turretSocket.on('disconnect', () => {
+    if (turretRoomId) turretNote('连接断开，正在重连…');
   });
 
   turretSocket.on('connect_error', () => {
@@ -1309,9 +1318,6 @@ function turretInit() {
     (room.players || []).forEach((p) => {
       if (p.id !== turretSocket.id) turretOthers[p.id] = p;
       else {
-        turretPlayer.x = p.x;
-        turretPlayer.y = p.y;
-        turretPlayer.angle = p.angle || turretPlayer.angle;
         turretPlayer.hp = p.hp;
         turretPlayer.kills = p.kills;
       }
@@ -1324,11 +1330,12 @@ function turretInit() {
   // 其他玩家位置同步
   turretSocket.on('gameUpdate', (data) => {
     if (!turretOthers[data.id]) {
-      turretOthers[data.id] = { x: data.x, y: data.y, angle: 0, hp: 100, kills: 0, name: '玩家' };
+      turretOthers[data.id] = { x: data.x, y: data.y, angle: 0, hp: data.hp !== undefined ? data.hp : 100, kills: data.kills || 0, name: data.name || '玩家' };
     }
     turretOthers[data.id].x = data.x;
     turretOthers[data.id].y = data.y;
     if (data.angle !== undefined) turretOthers[data.id].angle = data.angle;
+    if (data.name) turretOthers[data.id].name = data.name;
   });
 
   // 玩家离开
@@ -1339,10 +1346,50 @@ function turretInit() {
   // 其他玩家开炮 → 生成炮弹
   turretSocket.on('shoot', (data) => {
     turretBullets.push({
+      id: data.id,
       x: data.x, y: data.y,
       angle: data.angle || 0,
       owner: data.playerId || 'other'
     });
+  });
+
+  // 命中：由服务端判定
+  turretSocket.on('hit', (d) => {
+    const i = turretBullets.findIndex(b => b.id === d.bulletId);
+    if (i !== -1) turretBullets.splice(i, 1);
+    if (d.victim === turretSocket.id) turretPlayer.hp = d.hp;
+    else if (turretOthers[d.victim]) turretOthers[d.victim].hp = d.hp;
+    updateHud();
+  });
+
+  // 击杀：击杀数加一，被击杀者在新位置重生
+  turretSocket.on('kill', (d) => {
+    if (d.killer === turretSocket.id) turretPlayer.kills = d.kills;
+    else if (turretOthers[d.killer]) turretOthers[d.killer].kills = d.kills;
+    if (d.victim === turretSocket.id) {
+      turretPlayer.hp = 100; turretPlayer.x = d.x; turretPlayer.y = d.y;
+      turretNote('你被 ' + (d.killerName || '对手') + ' 击杀，已重生');
+    } else if (turretOthers[d.victim]) {
+      turretOthers[d.victim].hp = 100; turretOthers[d.victim].x = d.x; turretOthers[d.victim].y = d.y;
+      turretNote((d.killerName || '?') + ' 击杀了 ' + (d.victimName || '?'));
+    }
+    updateHud();
+  });
+
+  turretSocket.on('gameOver', (d) => {
+    turretBullets = [];
+    turretBanner = (d.winner === turretSocket.id ? '你赢了！' : (d.winnerName || '对手') + ' 获胜') + '　5 秒后开始新一局';
+  });
+
+  turretSocket.on('newRound', (room) => {
+    turretBanner = null;
+    turretBullets = [];
+    turretOthers = {};
+    (room.players || []).forEach((p) => {
+      if (p.id !== turretSocket.id) turretOthers[p.id] = p;
+      else { turretPlayer.x = p.x; turretPlayer.y = p.y; turretPlayer.hp = p.hp; turretPlayer.kills = p.kills; }
+    });
+    updateHud();
   });
 }
 
@@ -1353,6 +1400,9 @@ function startTurretGame() {
   turretPlayer = { x: 400, y: 250, angle: -Math.PI / 2, hp: 100, kills: 0 };
   turretBullets = [];
   turretKeys = {};
+  turretMouse = null;
+  turretFeed = [];
+  turretBanner = null;
 
   updateHud();
 
@@ -1360,6 +1410,7 @@ function startTurretGame() {
   document.addEventListener('keyup', turretKeyUp);
   window.addEventListener('blur', turretClearKeys);
   turretCanvas.addEventListener('mousemove', turretMouseMove);
+  turretCanvas.addEventListener('mousedown', turretMouseDown);
 
   if (turretLoop) clearInterval(turretLoop);
   turretLoop = setInterval(turretTick, 1000 / 60);
@@ -1379,10 +1430,25 @@ function turretClearKeys() { turretKeys = {}; }
 function turretMouseMove(e) {
   if (!turretCanvas) return;
   const rect = turretCanvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (turretCanvas.width / rect.width);
-  const my = (e.clientY - rect.top) * (turretCanvas.height / rect.height);
-  turretPlayer.angle = Math.atan2(my - turretPlayer.y, mx - turretPlayer.x);
+  turretMouse = {
+    x: (e.clientX - rect.left) * (turretCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (turretCanvas.height / rect.height)
+  };
+  turretAim();
   syncState();
+}
+
+// 鼠标左键开火
+function turretMouseDown(e) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  turretMouseMove(e);
+  turretShoot();
+}
+
+// 按当前位置重新计算瞄准角度（移动时准星仍指向鼠标）
+function turretAim() {
+  if (turretMouse) turretPlayer.angle = Math.atan2(turretMouse.y - turretPlayer.y, turretMouse.x - turretPlayer.x);
 }
 
 function turretMove(dir) {
@@ -1402,13 +1468,7 @@ function clampPlayer() {
 
 function turretShoot() {
   if (!turretSocket || !turretRoomId) return;
-  turretBullets.push({
-    x: turretPlayer.x,
-    y: turretPlayer.y,
-    angle: turretPlayer.angle,
-    owner: turretSocket.id
-  });
-  // 通知其他玩家
+  // 炮弹由服务端创建并广播给房间里所有人（包括自己）
   turretSocket.emit('shoot', {
     roomId: turretRoomId,
     x: turretPlayer.x,
@@ -1434,38 +1494,15 @@ function updateHud() {
   document.getElementById('turretRoom').textContent = '房间: ' + (turretRoomId || '-');
 }
 
-function checkBulletHits() {
-  for (let i = turretBullets.length - 1; i >= 0; i--) {
-    const b = turretBullets[i];
-    if (b.owner === turretSocket.id) continue; // 不判自己的弹
-    const other = turretOthers[b.owner];
-    const target = other; // 击中其他玩家
-    // 这里简化为：敌方炮弹打到我（在房主逻辑下用距离判断）
-    const dx = b.x - turretPlayer.x;
-    const dy = b.y - turretPlayer.y;
-    if (dx * dx + dy * dy < (TURRET_RADIUS + 4) * (TURRET_RADIUS + 4)) {
-      turretPlayer.hp -= 10;
-      turretBullets.splice(i, 1);
-      if (turretPlayer.hp <= 0) {
-        turretPlayer.hp = 0;
-        updateHud();
-        // 对方得分：由发射者逻辑；这里本端只做受击反馈
-        turretPlayer.hp = 100; // 简单重生
-      }
-      updateHud();
-      continue;
-    }
-  }
-}
-
 function turretTick() {
   // 移动
   let moved = false;
-  if (turretKeys['a'] || turretKeys['arrowleft']) { turretPlayer.x -= TURRET_SPEED; turretPlayer.angle = Math.PI; moved = true; }
-  if (turretKeys['d'] || turretKeys['arrowright']) { turretPlayer.x += TURRET_SPEED; turretPlayer.angle = 0; moved = true; }
-  if (turretKeys['w'] || turretKeys['arrowup']) { turretPlayer.y -= TURRET_SPEED; turretPlayer.angle = -Math.PI / 2; moved = true; }
-  if (turretKeys['s'] || turretKeys['arrowdown']) { turretPlayer.y += TURRET_SPEED; turretPlayer.angle = Math.PI / 2; moved = true; }
+  if (turretKeys['a'] || turretKeys['arrowleft']) { turretPlayer.x -= TURRET_SPEED; if (!turretMouse) turretPlayer.angle = Math.PI; moved = true; }
+  if (turretKeys['d'] || turretKeys['arrowright']) { turretPlayer.x += TURRET_SPEED; if (!turretMouse) turretPlayer.angle = 0; moved = true; }
+  if (turretKeys['w'] || turretKeys['arrowup']) { turretPlayer.y -= TURRET_SPEED; if (!turretMouse) turretPlayer.angle = -Math.PI / 2; moved = true; }
+  if (turretKeys['s'] || turretKeys['arrowdown']) { turretPlayer.y += TURRET_SPEED; if (!turretMouse) turretPlayer.angle = Math.PI / 2; moved = true; }
   clampPlayer();
+  turretAim();
   if (moved) syncState();
 
   // 炮弹移动 + 清理越界
@@ -1477,9 +1514,6 @@ function turretTick() {
       turretBullets.splice(i, 1);
     }
   }
-
-  // 判定受击
-  checkBulletHits();
 
   draw();
 }
@@ -1528,6 +1562,18 @@ function draw() {
     turretPlayer.y + Math.sin(turretPlayer.angle) * 400
   );
   ctx.stroke();
+
+  // 击杀提示
+  const now = Date.now();
+  turretFeed = turretFeed.filter(f => f.until > now);
+  ctx.font = '14px Arial'; ctx.textAlign = 'left';
+  turretFeed.forEach((f, i) => { ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillText(f.text, 12, 24 + i * 20); });
+  // 本局结束横幅
+  if (turretBanner) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 200, 800, 100);
+    ctx.fillStyle = '#ffd93d'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(turretBanner, 400, 258);
+  }
 }
 
 function drawTurret(x, y, angle, color, name) {
@@ -1558,7 +1604,8 @@ function turretStop() {
   document.removeEventListener('keyup', turretKeyUp);
   window.removeEventListener('blur', turretClearKeys);
   turretClearKeys();
-  if (turretCanvas) turretCanvas.removeEventListener('mousemove', turretMouseMove);
+  if (turretCanvas) { turretCanvas.removeEventListener('mousemove', turretMouseMove); turretCanvas.removeEventListener('mousedown', turretMouseDown); }
+  turretMouse = null; turretFeed = []; turretBanner = null;
   if (turretSocket) { turretSocket.disconnect(); turretSocket = null; }
   turretRoomId = null;
   for (const k in turretOthers) delete turretOthers[k];
